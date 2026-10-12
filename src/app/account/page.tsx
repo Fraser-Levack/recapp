@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useData } from "@/components/DataProvider";
 import { CloudIcon } from "@/components/icons";
@@ -42,9 +43,14 @@ export default function AccountPage() {
 
       {guestCards > 0 && <ImportGuest count={guestCards} onImport={importGuestData} />}
 
-      <button className="btn btn-outline w-full sm:w-auto" onClick={signOut}>
-        Sign out
-      </button>
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <Link href="/account/reset" className="btn btn-outline w-full sm:w-auto">
+          Change password
+        </Link>
+        <button className="btn btn-outline w-full sm:w-auto" onClick={signOut}>
+          Sign out
+        </button>
+      </div>
     </div>
   );
 }
@@ -73,7 +79,7 @@ function ImportGuest({ count, onImport }: { count: number; onImport: () => Promi
 }
 
 function AuthForm() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
@@ -89,6 +95,12 @@ function AuthForm() {
     if (mode === "signin") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) setError(error.message);
+    } else if (mode === "forgot") {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/account/reset`,
+      });
+      if (error) setError(error.message);
+      else setInfo("If that email has an account, we've sent a link to reset your password.");
     } else {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -101,11 +113,22 @@ function AuthForm() {
     setBusy(false);
   }
 
+  function switchMode(next: typeof mode) {
+    setMode(next);
+    setError(null);
+    setInfo(null);
+  }
+
+  const title = { signin: "Welcome back", signup: "Create account", forgot: "Reset password" }[mode];
+  const submitLabel = { signin: "Sign in", signup: "Create account", forgot: "Send reset link" }[mode];
+
   return (
     <div className="mx-auto max-w-sm space-y-6 pt-4">
       <div className="space-y-1 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight">{mode === "signin" ? "Welcome back" : "Create account"}</h1>
-        <p className="text-sm text-muted">Sync your decks across all your devices.</p>
+        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+        <p className="text-sm text-muted">
+          {mode === "forgot" ? "We'll email you a link to choose a new password." : "Sync your decks across all your devices."}
+        </p>
       </div>
 
       <form onSubmit={submit} className="space-y-3">
@@ -119,33 +142,33 @@ function AuthForm() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <input
-          className="input"
-          type="password"
-          autoComplete={mode === "signin" ? "current-password" : "new-password"}
-          placeholder="Password"
-          minLength={6}
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        {mode !== "forgot" && (
+          <input
+            className="input"
+            type="password"
+            autoComplete={mode === "signin" ? "current-password" : "new-password"}
+            placeholder="Password"
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+        )}
         {error && <p className="text-sm text-again">{error}</p>}
         {info && <p className="text-sm text-good">{info}</p>}
         <button className="btn btn-primary w-full" disabled={busy}>
-          {busy ? "…" : mode === "signin" ? "Sign in" : "Create account"}
+          {busy ? "…" : submitLabel}
         </button>
+        {mode === "signin" && (
+          <button type="button" className="block w-full text-center text-sm text-muted hover:text-fg" onClick={() => switchMode("forgot")}>
+            Forgot password?
+          </button>
+        )}
       </form>
 
       <p className="text-center text-sm text-muted">
-        {mode === "signin" ? "New here?" : "Already have an account?"}{" "}
-        <button
-          className="font-medium text-fg"
-          onClick={() => {
-            setMode(mode === "signin" ? "signup" : "signin");
-            setError(null);
-            setInfo(null);
-          }}
-        >
+        {mode === "signin" ? "New here?" : mode === "signup" ? "Already have an account?" : "Remembered it?"}{" "}
+        <button className="font-medium text-fg" onClick={() => switchMode(mode === "signin" ? "signup" : "signin")}>
           {mode === "signin" ? "Create an account" : "Sign in"}
         </button>
       </p>
