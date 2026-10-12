@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# RecApp
 
-## Getting Started
+A minimal, mobile-friendly spaced-repetition flashcard app (an Anki-style clone) built with Next.js, TypeScript and Tailwind.
 
-First, run the development server:
+- **Decks & cards**: create, rename, search, edit, delete
+- **Spaced repetition**: SM-2 scheduler with Again / Hard / Good / Easy, like Anki
+- **Fast adding on a phone**: the big **+** in the bottom bar opens a screen that keeps the keyboard up between cards, remembers your last deck, and can add a reversed card too
+- **Works with no setup**: cards are saved in the browser (guest mode)
+- **Optional accounts and sync**: free via [Supabase](https://supabase.com). Guest cards can be imported after signing in
+- **Installable**: "Add to Home Screen" on iOS and Android to open it like an app
+- Light and dark mode follow the system setting
+
+## Run it
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**To try it on your phone** on the same Wi-Fi, run `npm run dev -- -H 0.0.0.0` and open `http://<your-PC's-IP>:3000` on the phone. Run `ipconfig` to find the IP.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Enable accounts and sync (free)
 
-## Learn More
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In **SQL Editor**, paste the contents of [`supabase/schema.sql`](supabase/schema.sql) and run it. This creates the tables and the row-level security rules, so each user can only see their own cards.
+3. Copy `.env.example` to `.env.local` and fill in the values from **Project Settings → API**: the project URL and the publishable (or anon) key.
+4. Restart `npm run dev`.
 
-To learn more about Next.js, take a look at the following resources:
+By default, Supabase asks new users to confirm their email address. You can turn this off for testing under **Authentication → Sign In / Providers → Email → Confirm email**. When you deploy, add your site URL under **Authentication → URL Configuration** so the confirmation links point to it.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy (free)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Push the project to GitHub, import it at [vercel.com](https://vercel.com), and add the same two `NEXT_PUBLIC_SUPABASE_*` environment variables.
 
-## Deploy on Vercel
+## Keyboard shortcuts (desktop)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Where | Key | Action |
+|---|---|---|
+| Study | Space / Enter | Show the answer, then grade it Good |
+| Study | 1 – 4 | Again / Hard / Good / Easy |
+| Add / Edit | Ctrl/⌘ + Enter | Save the card |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project layout
+
+```
+src/lib/srs.ts                  scheduler, queue building, deck stats
+src/lib/supabase.ts             Supabase client and cloud read/write
+src/components/DataProvider.tsx app state; switches between local and cloud storage
+src/components/CardForm.tsx     shared add/edit form
+src/app/                        pages: decks, deck/[id], study/[id], add, cards/[id], account
+supabase/schema.sql             database tables and security policies
+```
